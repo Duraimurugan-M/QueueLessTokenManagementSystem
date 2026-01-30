@@ -1,8 +1,23 @@
 const express = require("express");
 const router = express.Router();
 
-router.get("/test", (req, res) => {
-  res.json({ message: "MD route working" });
-});
+const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
+
+const {
+  createDepartment,
+  getDepartments,
+  createDoctor,
+  getDoctors
+} = require("../controllers/mdController");
+
+// Only MD can access these routes
+router.use(authMiddleware, roleMiddleware(["MD"]));
+
+router.post("/department", createDepartment);
+router.get("/departments", getDepartments);
+
+router.post("/doctor", createDoctor);
+router.get("/doctors", getDoctors);
 
 module.exports = router;

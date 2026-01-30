@@ -1,8 +1,21 @@
 const express = require("express");
 const router = express.Router();
 
-router.get("/test", (req, res) => {
-  res.json({ message: "Token route working" });
-});
+const auth = require("../middleware/authMiddleware");
+const role = require("../middleware/roleMiddleware");
+
+const {
+  getTokenById,
+  getMyTokens
+} = require("../controllers/tokenController");
+
+const { downloadTokenPDF } = require("../controllers/tokenController");
+
+router.use(auth);
+
+router.get("/:tokenId", getTokenById);
+router.get("/my/all", role(["PATIENT"]), getMyTokens);
+
+router.get("/pdf/:tokenId", downloadTokenPDF);
 
 module.exports = router;

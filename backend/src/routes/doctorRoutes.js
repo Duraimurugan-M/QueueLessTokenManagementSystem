@@ -1,8 +1,21 @@
 const express = require("express");
 const router = express.Router();
 
-router.get("/test", (req, res) => {
-  res.json({ message: "Doctor route working" });
-});
+const auth = require("../middleware/authMiddleware");
+const role = require("../middleware/roleMiddleware");
+const {
+  createSchedule,
+  getMySchedule,
+  getTodayQueue,
+  updateTokenStatus
+} = require("../controllers/doctorController");
+
+router.use(auth, role(["DOCTOR"]));
+
+router.post("/schedule", createSchedule);
+router.get("/schedule", getMySchedule);
+
+router.get("/queue", getTodayQueue);
+router.patch("/token/:tokenId", updateTokenStatus);
 
 module.exports = router;
