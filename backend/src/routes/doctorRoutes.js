@@ -7,7 +7,8 @@ const {
   createSchedule,
   getMySchedule,
   getTodayQueue,
-  updateTokenStatus
+  updateTokenStatus,
+  getTodayDoctorAnalytics
 } = require("../controllers/doctorController");
 
 router.use(auth, role(["DOCTOR"]));
@@ -17,5 +18,7 @@ router.get("/schedule", getMySchedule);
 
 router.get("/queue", getTodayQueue);
 router.patch("/token/:tokenId", updateTokenStatus);
+
+router.get("/analytics/today", getTodayDoctorAnalytics);
 
 module.exports = router;

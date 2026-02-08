@@ -1,6 +1,7 @@
 const Schedule = require("../models/Schedule");
 const Doctor = require("../models/Doctor");
 const Token = require("../models/Token");
+const Prescription = require("../models/Prescription");
 
 // 1️⃣ VIEW AVAILABLE SLOTS
 exports.getAvailableSlots = async (req, res) => {
@@ -108,5 +109,59 @@ exports.cancelToken = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getPatientVisitHistory = async (req, res) => {
+  try {
+    const patientId = req.user.id;
+
+    const visits = await Token.find({ patient: patientId })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "doctor",
+        populate: [
+          {
+            path: "user",
+            model: "User",
+            select: "name"
+          },
+          {
+            path: "department",
+            model: "Department",
+            select: "name"
+          }
+        ]
+      });
+
+    const visitHistory = await Promise.all(
+      visits.map(async (visit) => {
+        const prescription = await Prescription.findOne({
+          token: visit._id
+        });
+
+        return {
+          visitId: visit._id,
+          tokenNumber: visit.tokenNumber,
+          slotTime: visit.slotTime,
+          status: visit.status,
+          date: visit.createdAt,
+          doctor: visit.doctor?.user?.name || "N/A",
+          department: visit.doctor?.department?.name || "N/A",
+          prescriptionId: prescription ? prescription._id : null
+        };
+      })
+    );
+
+    res.json({
+      message: "Patient visit history fetched successfully",
+      visits: visitHistory
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching visit history",
+      error: error.message
+    });
   }
 };

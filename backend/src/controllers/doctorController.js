@@ -158,3 +158,74 @@ exports.updateTokenStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// GET TODAY'S DOCTOR ANALYTICS
+exports.getTodayDoctorAnalytics = async (req, res) => {
+  try {
+    const doctorUserId = req.user.id;
+
+    // 1. Get doctor object
+    const doctor = await Doctor.findOne({
+      user: doctorUserId
+    });
+
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    // 2. Rolling 24-hour window
+    const end = new Date();
+    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+
+    // 3. Fetch tokens for this doctor only
+    const tokens = await Token.find({
+      doctor: doctor._id,
+      createdAt: { $gte: start, $lte: end }
+    }).populate({
+      path: "doctor",
+      populate: {
+        path: "department",
+        model: "Department",
+        select: "name"
+      }
+    });
+
+    // 4. Counters
+    let totalPatients = 0;
+    let completedCount = 0;
+    let cancelledCount = 0;
+
+    // 5. Slot-wise details
+    const slotDetails = [];
+
+    tokens.forEach((token) => {
+      totalPatients++;
+
+      if (token.status === "COMPLETED") completedCount++;
+      if (token.status === "CANCELLED") cancelledCount++;
+
+      slotDetails.push({
+        tokenNumber: token.tokenNumber,
+        slotTime: token.slotTime,
+        status: token.status,
+        department: token.doctor?.department?.name || "N/A"
+      });
+    });
+
+    res.json({
+      message: "Doctor analytics fetched successfully",
+      data: {
+        totalPatients,
+        completedCount,
+        cancelledCount,
+        slotDetails
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching doctor analytics",
+      error: error.message
+    });
+  }
+};
