@@ -7,7 +7,7 @@ const scheduleSchema = new mongoose.Schema({
     required: true
   },
   date: {
-    type: String, // YYYY-MM-DD
+    type: Date,
     required: true
   },
   startTime: {

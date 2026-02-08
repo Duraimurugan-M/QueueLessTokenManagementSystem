@@ -6,10 +6,18 @@ const generatePrescriptionPDF = require("../utils/prescriptionPdfGenerator");
 exports.createPrescription = async (req, res) => {
   try {
     const { tokenId, diagnosisNotes, medicines } = req.body;
-    const doctorId = req.user.id;
+    const doctorId = req.user?.id;
+
+    if (!doctorId) {
+      return res.status(401).json({ message: "Unauthorized: doctor ID missing" });
+    }
+
+    if (!tokenId) {
+      return res.status(400).json({ message: "Token ID is required" });
+    }
 
     // Validate medicines array
-    if (!medicines || medicines.length === 0) {
+    if (!medicines || !Array.isArray(medicines) || medicines.length === 0) {
       return res.status(400).json({ message: "At least one medicine is required" });
     }
 
@@ -29,20 +37,20 @@ exports.createPrescription = async (req, res) => {
 
     if (token.status !== "COMPLETED") {
       return res.status(400).json({
-        message: "Prescription allowed only after consultation"
+        message: "Prescription allowed only after consultation is completed"
       });
     }
 
     const alreadyExists = await Prescription.findOne({ token: tokenId });
     if (alreadyExists) {
-      return res.status(400).json({
+      return res.status(409).json({
         message: "Prescription already exists for this token"
       });
     }
 
     const doctor = await Doctor.findOne({ user: doctorId });
     if (!doctor) {
-      return res.status(404).json({ message: "Doctor not found" });
+      return res.status(404).json({ message: "Doctor profile not found" });
     }
 
     const prescription = await Prescription.create({
@@ -54,37 +62,51 @@ exports.createPrescription = async (req, res) => {
       medicines
     });
 
+    if (!prescription) {
+      return res.status(500).json({ message: "Failed to create prescription" });
+    }
+
     res.status(201).json({
       message: "Prescription created successfully",
       prescription
     });
 
   } catch (error) {
+    console.error("Create prescription error:", error);
     res.status(500).json({
-      message: "Error creating prescription",
-      error: error.message
+      message: "Server error creating prescription"
     });
   }
 };
 
 exports.downloadPrescriptionPDF = async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const prescription = await Prescription.findById(id)
-    .populate("patient", "name age")
-    .populate({
-      path: "doctor",
-      populate: {
-        path: "user",
-        model: "User",
-        select: "name",
-      },
-    })
-    .populate("department", "name");
+    if (!id) {
+      return res.status(400).json({ message: "Prescription ID is required" });
+    }
 
-  if (!prescription) {
-    return res.status(404).json({ message: "Prescription not found" });
+    const prescription = await Prescription.findById(id)
+      .populate("patient", "name age")
+      .populate({
+        path: "doctor",
+        populate: {
+          path: "user",
+          model: "User",
+          select: "name",
+        },
+      })
+      .populate("department", "name");
+
+    if (!prescription) {
+      return res.status(404).json({ message: "Prescription not found" });
+    }
+
+    generatePrescriptionPDF(res, prescription);
+
+  } catch (error) {
+    console.error("Download prescription PDF error:", error);
+    res.status(500).json({ message: "Server error downloading prescription" });
   }
-
-  generatePrescriptionPDF(res, prescription);
 };
