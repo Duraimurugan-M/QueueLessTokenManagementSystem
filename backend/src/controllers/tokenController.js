@@ -41,7 +41,7 @@ exports.downloadTokenPDF = async (req, res) => {
   try {
     const { tokenId } = req.params;
 
-    const token = await require("../models/Token").findById(tokenId)
+    const token = await Token.findById(tokenId)
       .populate("doctor")
       .populate("patient");
 

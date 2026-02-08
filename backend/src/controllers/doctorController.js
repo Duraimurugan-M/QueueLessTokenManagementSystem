@@ -85,12 +85,12 @@ exports.getMySchedule = async (req, res) => {
   }
 };
 
-// 3️⃣ GET TODAY'S QUEUE
+// 3️⃣ GET TODAY'S QUEUE (last 24 hours)
 exports.getTodayQueue = async (req, res) => {
   try {
     const doctorUserId = req.user.id;
 
-    const doctor = await require("../models/Doctor").findOne({
+    const doctor = await Doctor.findOne({
       user: doctorUserId
     });
 
@@ -98,13 +98,13 @@ exports.getTodayQueue = async (req, res) => {
       return res.status(404).json({ message: "Doctor not found" });
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    // Rolling 24-hour window
+    const end = new Date();
+    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
 
     const tokens = await Token.find({
       doctor: doctor._id,
-      createdAt: {
-        $gte: new Date(today)
-      }
+      createdAt: { $gte: start, $lte: end }
     }).sort({ tokenNumber: 1 });
 
     res.json(tokens);
@@ -125,7 +125,7 @@ exports.updateTokenStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    const doctor = await require("../models/Doctor").findOne({
+    const doctor = await Doctor.findOne({
       user: doctorUserId
     });
 
@@ -143,7 +143,6 @@ exports.updateTokenStatus = async (req, res) => {
 
     // If completed, mark slot as completed too
     if (status === "COMPLETED") {
-      const Schedule = require("../models/Schedule");
       const schedule = await Schedule.findById(token.schedule);
       const slot = schedule.slots.id(token.slotId);
       if (slot) {

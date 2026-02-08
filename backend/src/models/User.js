@@ -3,7 +3,15 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    unique: true,
+    sparse: true,
+    lowercase: true,
+    trim: true
   },
   mobile: {
     type: String,
@@ -16,9 +24,9 @@ const userSchema = new mongoose.Schema({
   },
   age: {
     type: Number,
-    required: true,
+    required: false,
     min: 0,
-    max: 100
+    max: 150
   },
   role: {
     type: String,
