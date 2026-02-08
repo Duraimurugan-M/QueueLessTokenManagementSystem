@@ -2,15 +2,12 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// REGISTER USER (Patient only for now)
+// ===============================
+// REGISTER PATIENT (PUBLIC)
+// ===============================
 exports.register = async (req, res) => {
   try {
-    const { name, mobile, password, role } = req.body;
-
-    // Only allow patient self-registration
-    if (role !== "PATIENT") {
-      return res.status(403).json({ message: "Only patients can self-register" });
-    }
+    const { name, mobile, password } = req.body;
 
     const existingUser = await User.findOne({ mobile });
     if (existingUser) {
@@ -24,7 +21,7 @@ exports.register = async (req, res) => {
       name,
       mobile,
       password: hashedPassword,
-      role
+      role: "PATIENT" // force role
     });
 
     res.status(201).json({
@@ -37,7 +34,9 @@ exports.register = async (req, res) => {
   }
 };
 
-// LOGIN USER (All roles)
+// ===============================
+// LOGIN (ALL ROLES)
+// ===============================
 exports.login = async (req, res) => {
   try {
     const { mobile, password } = req.body;
@@ -55,8 +54,7 @@ exports.login = async (req, res) => {
     const token = jwt.sign(
       {
         id: user._id,
-        role: user.role,
-        department: user.department
+        role: user.role
       },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
@@ -73,8 +71,9 @@ exports.login = async (req, res) => {
   }
 };
 
-
-// TEMP: REGISTER MD (ONLY FOR DEVELOPMENT)
+// ===============================
+// REGISTER MD (DEV ONLY / ADMIN)
+// ===============================
 exports.registerMD = async (req, res) => {
   try {
     const { name, mobile, password } = req.body;
