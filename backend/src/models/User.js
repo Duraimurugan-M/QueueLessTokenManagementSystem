@@ -14,6 +14,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  age: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100
+  },
   role: {
     type: String,
     enum: ["MD", "DOCTOR", "PATIENT"],

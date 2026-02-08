@@ -3,10 +3,15 @@ const PDFDocument = require("pdfkit");
 module.exports = function generatePrescriptionPDF(res, prescription) {
   const doc = new PDFDocument({ size: "A4", margin: 50 });
 
+  // Generate filename with date and patient name
+  const visitDate = prescription.createdAt.toISOString().split("T")[0];
+  const patientName = prescription.patient.name.replace(/\s+/g, "_");
+  const fileName = `Prescription_${visitDate}_${patientName}.pdf`;
+
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
     "Content-Disposition",
-    `attachment; filename=prescription-${prescription._id}.pdf`
+    `attachment; filename=${fileName}`
   );
 
   doc.pipe(res, { end: true });
@@ -56,6 +61,10 @@ module.exports = function generatePrescriptionPDF(res, prescription) {
       .text(
         `${index + 1}. ${med.name} - ${med.timing} (${med.foodInstruction})`
       );
+    doc
+      .fontSize(10)
+      .text(`   Side Effects: ${med.sideEffects}`, { color: "#666666" });
+    doc.moveDown(0.3);
   });
 
   doc.moveDown(2);

@@ -15,6 +15,11 @@ const medicineSchema = new mongoose.Schema({
     type: String,
     enum: ["Before Food", "After Food"],
     required: true
+  },
+  sideEffects: {
+    type: String,
+    required: true,
+    trim: true
   }
 });
 

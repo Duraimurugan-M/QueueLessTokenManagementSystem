@@ -8,6 +8,20 @@ exports.createPrescription = async (req, res) => {
     const { tokenId, diagnosisNotes, medicines } = req.body;
     const doctorId = req.user.id;
 
+    // Validate medicines array
+    if (!medicines || medicines.length === 0) {
+      return res.status(400).json({ message: "At least one medicine is required" });
+    }
+
+    // Validate each medicine has required fields including sideEffects
+    for (let med of medicines) {
+      if (!med.name || !med.timing || !med.foodInstruction || !med.sideEffects) {
+        return res.status(400).json({
+          message: "Each medicine must have name, timing, foodInstruction, and sideEffects"
+        });
+      }
+    }
+
     const token = await Token.findById(tokenId);
     if (!token) {
       return res.status(404).json({ message: "Token not found" });
