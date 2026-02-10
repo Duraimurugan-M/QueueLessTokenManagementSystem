@@ -47,6 +47,7 @@ POST http://localhost:5000/api/auth/register
 {
   "name": "Ramesh Sharma",
   "mobile": "9988776655",
+  "email": "ramesh@gmail.com",
   "password": "Patient@123",
   "age": 35
 }
@@ -54,7 +55,7 @@ POST http://localhost:5000/api/auth/register
 Response: Save patientUserId from response.userId
 
 ✅ Expected: 201 Created
-✅ Verify: Age is mandatory for patient
+✅ Verify: Email is required (valid format), Age is mandatory for patient
 
 ───────────────────────────────────────────────────────────────────────────────
 

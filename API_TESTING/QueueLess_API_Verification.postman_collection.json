@@ -88,7 +88,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Ramesh Sharma\",\n  \"mobile\": \"9988776655\",\n  \"password\": \"Patient@123\",\n  \"age\": 35\n}"
+              "raw": "{\n  \"name\": \"Ramesh Sharma\",\n  \"mobile\": \"9988776655\",\n  \"email\": \"ramesh@gmail.com\",\n  \"password\": \"Patient@123\",\n  \"age\": 35\n}"
             },
             "url": {
               "raw": "http://localhost:5000/api/auth/register",

@@ -112,6 +112,7 @@ JSON Data:
 {
   "name": "Ramesh Sharma",
   "mobile": "9988776655",
+  "email": "ramesh@gmail.com",
   "password": "Patient@123",
   "age": 35
 }
@@ -128,12 +129,16 @@ Expected Response (201 Created):
 ✅ VERIFICATION CHECKLIST:
   ☐ Status Code: 201
   ☐ User ID received
+  ☐ Email is required (new validation)
   ☐ Age validation working (mandatory for patient)
 
 💾 SAVE THIS:
   patientUserId = "..." (from userId)
 
 Error Cases to Test:
+  • Missing email: {} → Should return 400 "Name, mobile, email, and password are required"
+  • Invalid email format: "ramesh123" → Should return 400 "Invalid email format"
+  • Duplicate email: → Should return 409 "Email already registered"
   • Missing age: {} → Should return 400 "Age is required and must be between 1-150"
   • Invalid age: age: 0 or 200 → Should return 400
   • Duplicate mobile: → Should return 409 "Mobile number already registered"
