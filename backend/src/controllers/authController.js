@@ -7,11 +7,17 @@ const jwt = require("jsonwebtoken");
 // ===============================
 exports.register = async (req, res) => {
   try {
-    const { name, mobile, password, age } = req.body;
+    const { name, mobile, email, password, age } = req.body;
 
     // INPUT VALIDATION
-    if (!name || !mobile || !password) {
-      return res.status(400).json({ message: "Name, mobile, and password are required" });
+    if (!name || !mobile || !password || !email) {
+      return res.status(400).json({ message: "Name, mobile, email, and password are required" });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
     }
 
     // Validate age for patient (mandatory)
@@ -25,6 +31,12 @@ exports.register = async (req, res) => {
       return res.status(409).json({ message: "Mobile number already registered" });
     }
 
+    // CHECK: email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(409).json({ message: "Email already registered" });
+    }
+
     // HASH: password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -33,6 +45,7 @@ exports.register = async (req, res) => {
     const user = await User.create({
       name,
       mobile,
+      email,
       password: hashedPassword,
       age,
       role: "PATIENT" // force role
