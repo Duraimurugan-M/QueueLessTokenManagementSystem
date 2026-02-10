@@ -1,0 +1,521 @@
+{
+  "info": {
+    "_postman_id": "queueless-api-test-2026",
+    "name": "QueueLess API - Complete Verification",
+    "description": "End-to-end API testing with all optimization changes",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "PHASE 1: Setup - Department & Doctor",
+      "item": [
+        {
+          "name": "1. Create Department (ENT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ENT\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/md/department",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "md",
+                "department"
+              ]
+            },
+            "description": "Create ENT Department - SAVE departmentId from response"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Create Doctor for ENT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Rajeesh Kumar\",\n  \"mobile\": \"9876543210\",\n  \"password\": \"Doctor@123\",\n  \"departmentId\": \"PASTE_DEPARTMENT_ID_HERE\",\n  \"specialization\": \"ENT Specialist\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/md/doctor",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "md",
+                "doctor"
+              ]
+            },
+            "description": "Create Doctor - SAVE doctorId and doctor.user ID from response"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PHASE 2: Authentication",
+      "item": [
+        {
+          "name": "3. Patient Signup (Register)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ramesh Sharma\",\n  \"mobile\": \"9988776655\",\n  \"password\": \"Patient@123\",\n  \"age\": 35\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Patient Signup - SAVE patientUserId from response"
+          },
+          "response": []
+        },
+        {
+          "name": "4. Patient Login (with Mobile) ✨ NEW",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"9988776655\",\n  \"password\": \"Patient@123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Patient Login - SAVE patientToken for all patient API calls"
+          },
+          "response": []
+        },
+        {
+          "name": "5. Doctor Login (with Mobile)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"9876543210\",\n  \"password\": \"Doctor@123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Doctor Login - SAVE doctorToken for all doctor API calls"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PHASE 3: Scheduling ✨ DATE TYPE CHANGE",
+      "item": [
+        {
+          "name": "6. Create Schedule for Doctor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_DOCTOR_TOKEN_HERE"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-02-12\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"17:00\",\n  \"breakStart\": \"13:00\",\n  \"breakEnd\": \"14:00\",\n  \"slotDuration\": 30,\n  \"maxTokens\": 8\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/doctor/schedule",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "doctor",
+                "schedule"
+              ]
+            },
+            "description": "Create Schedule - Verify date is ISODate format - SAVE scheduleId"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PHASE 4: Patient - View Slots & Book",
+      "item": [
+        {
+          "name": "7. Get Available Slots",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_PATIENT_TOKEN_HERE"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/patient/slots?doctorId=PASTE_DOCTOR_ID_HERE&date=2026-02-12",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "patient",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "doctorId",
+                  "value": "PASTE_DOCTOR_ID_HERE"
+                },
+                {
+                  "key": "date",
+                  "value": "2026-02-12"
+                }
+              ]
+            },
+            "description": "Get Available Slots - SAVE first slotId"
+          },
+          "response": []
+        },
+        {
+          "name": "8. Book Token (Patient Books Appointment)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_PATIENT_TOKEN_HERE"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"PASTE_SCHEDULE_ID_HERE\",\n  \"slotId\": \"PASTE_SLOT_ID_HERE\",\n  \"name\": \"Ramesh Sharma\",\n  \"age\": 35,\n  \"dob\": \"1990-05-15\",\n  \"reason\": \"Regular checkup\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/patient/book-token",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "patient",
+                "book-token"
+              ]
+            },
+            "description": "Book Token - SAVE tokenId"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PHASE 5: Doctor - View Queue & Update Status",
+      "item": [
+        {
+          "name": "9. Get Doctor's Queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_DOCTOR_TOKEN_HERE"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/doctor/queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "doctor",
+                "queue"
+              ]
+            },
+            "description": "Get Doctor's Queue - View all booked tokens"
+          },
+          "response": []
+        },
+        {
+          "name": "10. Update Token Status (Mark COMPLETED)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_DOCTOR_TOKEN_HERE"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/doctor/token/PASTE_TOKEN_ID_HERE/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "doctor",
+                "token",
+                "PASTE_TOKEN_ID_HERE",
+                "status"
+              ]
+            },
+            "description": "Update Token Status to COMPLETED"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PHASE 6: Prescription",
+      "item": [
+        {
+          "name": "11. Create Prescription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_DOCTOR_TOKEN_HERE"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenId\": \"PASTE_TOKEN_ID_HERE\",\n  \"diagnosisNotes\": \"Common cold with mild fever. Advised rest and fluids.\",\n  \"medicines\": [\n    {\n      \"name\": \"Crocin 650mg\",\n      \"timing\": \"Twice daily\",\n      \"foodInstruction\": \"Take with food\",\n      \"sideEffects\": \"May cause drowsiness in some patients\"\n    },\n    {\n      \"name\": \"Azithromycin 500mg\",\n      \"timing\": \"Once daily\",\n      \"foodInstruction\": \"Take on empty stomach\",\n      \"sideEffects\": \"Nausea, abdominal pain\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/prescription",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "prescription"
+              ]
+            },
+            "description": "Create Prescription - SAVE prescriptionId"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PHASE 7: Patient Dashboard ✨ N+1 FIX",
+      "item": [
+        {
+          "name": "12. Get Visit History ✨ N+1 QUERY FIX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_PATIENT_TOKEN_HERE"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/patient/visits",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "patient",
+                "visits"
+              ]
+            },
+            "description": "Get Visit History - VERIFY: Should be 2 queries max (not N+1)"
+          },
+          "response": []
+        },
+        {
+          "name": "13. Download Prescription PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_PATIENT_TOKEN_HERE"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/prescription/PASTE_PRESCRIPTION_ID_HERE/pdf",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "prescription",
+                "PASTE_PRESCRIPTION_ID_HERE",
+                "pdf"
+              ]
+            },
+            "description": "Download Prescription PDF - Should return binary PDF file"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PHASE 8: Analytics ✨ DEDUPED CODE",
+      "item": [
+        {
+          "name": "14. Get Doctor Analytics ✨ DEDUPED",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer PASTE_DOCTOR_TOKEN_HERE"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/analytics/doctor/today",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "analytics",
+                "doctor",
+                "today"
+              ]
+            },
+            "description": "Get Doctor Analytics - Uses NEW analyticsHelper utility"
+          },
+          "response": []
+        },
+        {
+          "name": "15. Get MD Analytics Dashboard ✨ DEDUPED",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer MD_TOKEN_HERE"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/analytics/md/today",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "analytics",
+                "md",
+                "today"
+              ]
+            },
+            "description": "Get MD Analytics - Uses NEW analyticsHelper utilities"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
