@@ -81,9 +81,11 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Password is required" });
     }
 
-    const user = await User.findOne({ 
-      $or: [{ mobile }, { email }] 
-    });
+    const orQuery = [];
+    if (mobile) orQuery.push({ mobile });
+    if (email) orQuery.push({ email });
+
+    const user = await User.findOne(orQuery.length ? { $or: orQuery } : {});
     
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
