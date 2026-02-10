@@ -8,8 +8,7 @@ const {
   createDepartment,
   getDepartments,
   createDoctor,
-  getDoctors,
-  getTodayAnalytics
+  getDoctors
 } = require("../controllers/mdController");
 
 // Only MD can access these routes
@@ -20,7 +19,5 @@ router.get("/departments", getDepartments);
 
 router.post("/doctor", createDoctor);
 router.get("/doctors", getDoctors);
-
-router.get("/analytics/today", getTodayAnalytics);
 
 module.exports = router;
