@@ -14,7 +14,7 @@ const {
 router.use(auth, role(["PATIENT"]));
 
 router.get("/slots", getAvailableSlots);
-router.post("/book", bookToken);
+router.post("/book-token", bookToken);
 router.delete("/cancel/:tokenId", cancelToken);
 router.get("/visit-history", getPatientVisitHistory);
 
