@@ -2,6 +2,8 @@ const Prescription = require("../models/Prescription");
 const Token = require("../models/Token");
 const Doctor = require("../models/Doctor");
 const generatePrescriptionPDF = require("../utils/prescriptionPdfGenerator");
+const { sendPrescriptionEmail } = require("../utils/emailService");
+const User = require("../models/User");
 
 exports.createPrescription = async (req, res) => {
   try {
@@ -64,6 +66,18 @@ exports.createPrescription = async (req, res) => {
 
     if (!prescription) {
       return res.status(500).json({ message: "Failed to create prescription" });
+    }
+
+    try {
+      const patientUser = await User.findById(token.patient);
+
+      await sendPrescriptionEmail(
+        patientUser.email,
+        patientUser.name,
+        prescription._id,
+      );
+    } catch (err) {
+      console.log("Prescription email failed:", err.message);
     }
 
     res.status(201).json({

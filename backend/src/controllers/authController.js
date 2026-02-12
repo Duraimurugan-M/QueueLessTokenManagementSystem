@@ -1,6 +1,8 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const { sendOTPEmail, sendWelcomeEmail, sendPasswordResetConfirmation } = require("../utils/emailService");
 
 // ===============================
 // REGISTER PATIENT (PUBLIC)
@@ -11,7 +13,9 @@ exports.register = async (req, res) => {
 
     // INPUT VALIDATION
     if (!name || !mobile || !password || !email) {
-      return res.status(400).json({ message: "Name, mobile, email, and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Name, mobile, email, and password are required" });
     }
 
     // Validate email format
@@ -22,13 +26,17 @@ exports.register = async (req, res) => {
 
     // Validate age for patient (mandatory)
     if (!age || age < 1 || age > 150) {
-      return res.status(400).json({ message: "Age is required and must be between 1-150" });
+      return res
+        .status(400)
+        .json({ message: "Age is required and must be between 1-150" });
     }
 
     // CHECK: mobile already exists
     const existingUser = await User.findOne({ mobile });
     if (existingUser) {
-      return res.status(409).json({ message: "Mobile number already registered" });
+      return res
+        .status(409)
+        .json({ message: "Mobile number already registered" });
     }
 
     // CHECK: email already exists
@@ -48,18 +56,24 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       age,
-      role: "PATIENT" // force role
+      role: "PATIENT", // force role
     });
 
     if (!user) {
       return res.status(500).json({ message: "Failed to create user" });
     }
 
+    // Send welcome email (non-blocking)
+    try {
+      await sendWelcomeEmail(user.email, user.name);
+    } catch (err) {
+      console.log("Welcome email failed:", err.message);
+    }
+
     res.status(201).json({
       message: "Patient registered successfully",
-      userId: user._id
+      userId: user._id,
     });
-
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({ message: "Server error during registration" });
@@ -116,3 +130,113 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "Server error during login" });
   }
 };
+
+
+//===========================
+// FORGOT PASSWORD
+//===========================
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate 6 digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    user.resetOTP = otp;
+    user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+    await user.save();
+
+    await sendOTPEmail(email, otp);
+
+    res.json({ message: "OTP sent to email" });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error sending OTP",
+      error: error.message
+    });
+  }
+};
+
+//===========================
+// RESET PASSWORD
+//===========================
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword, confirmNewPassword } = req.body;
+
+    // 1️⃣ Check OTP validity
+    const user = await User.findOne({
+      email,
+      resetOTP: otp,
+      otpExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // 2️⃣ Validate password fields
+    if (!newPassword || !confirmNewPassword) {
+      return res.status(400).json({
+        message: "New password and confirm password are required"
+      });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({
+        message: "Passwords do not match"
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters"
+      });
+    }
+
+    // 3️⃣ Prevent using same old password
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        message: "New password cannot be same as old password"
+      });
+    }
+
+    // 4️⃣ Hash and save new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    user.resetOTP = undefined;
+    user.otpExpiry = undefined;
+
+    await user.save();
+
+    // 5️⃣ Send confirmation email (non-blocking)
+    try {
+      await sendPasswordResetConfirmation(user.email, user.name);
+    } catch (err) {
+      console.log("Password confirmation email failed:", err.message);
+    }
+
+    res.json({ message: "Password reset successfully" });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error resetting password",
+      error: error.message
+    });
+  }
+};
+

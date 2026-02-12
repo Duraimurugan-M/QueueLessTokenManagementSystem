@@ -1,6 +1,8 @@
 const Schedule = require("../models/Schedule");
 const Doctor = require("../models/Doctor");
 const Token = require("../models/Token");
+const { sendTokenBookedEmail, sendTokenCancelledEmail } = require("../utils/emailService");
+const User = require("../models/User");
 const Prescription = require("../models/Prescription");
 
 // 1️⃣ VIEW AVAILABLE SLOTS
@@ -95,6 +97,21 @@ exports.bookToken = async (req, res) => {
       return res.status(500).json({ message: "Failed to create token" });
     }
 
+    try {
+      const patientUser = await User.findById(req.user.id).populate(
+        "department",
+      );
+
+      await sendTokenBookedEmail(patientUser.email, patientUser.name, {
+        tokenNumber: token.tokenNumber,
+        slotTime: token.slotTime,
+        department: token.department?.name || "N/A",
+        doctor: token.doctor?.user?.name || "Doctor",
+      });
+    } catch (err) {
+      console.log("Booking email failed:", err.message);
+    }
+
     res.status(201).json({
       message: "Token booked successfully",
       token
@@ -146,6 +163,18 @@ exports.cancelToken = async (req, res) => {
         slot.status = "CANCELLED";
         await schedule.save();
       }
+    }
+
+    try {
+      const patientUser = await User.findById(req.user.id);
+
+      await sendTokenCancelledEmail(
+        patientUser.email,
+        patientUser.name,
+        token.tokenNumber,
+      );
+    } catch (err) {
+      console.log("Cancellation email failed:", err.message);
     }
 
     res.json({ message: "Token cancelled successfully" });
