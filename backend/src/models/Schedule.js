@@ -30,10 +30,6 @@ const scheduleSchema = new mongoose.Schema({
     type: Number, // minutes
     required: true
   },
-  maxTokens: {
-    type: Number,
-    required: true
-  },
   slots: [
     {
       tokenNumber: Number,

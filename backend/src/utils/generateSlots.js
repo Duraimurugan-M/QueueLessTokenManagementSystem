@@ -10,14 +10,13 @@ module.exports = function generateSlots(
   endTime,
   breakStart,
   breakEnd,
-  duration,
-  maxTokens
+  duration
 ) {
   const slots = [];
   let current = startTime;
   let token = 1;
 
-  while (current < endTime && token <= maxTokens) {
+  while (current < endTime) {
     const next = addMinutes(current, duration);
 
     // Skip break time

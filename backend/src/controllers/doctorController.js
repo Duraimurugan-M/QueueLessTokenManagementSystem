@@ -18,12 +18,11 @@ exports.createSchedule = async (req, res) => {
       endTime,
       breakStart,
       breakEnd,
-      slotDuration,
-      maxTokens
+      slotDuration
     } = req.body;
 
     // INPUT VALIDATION
-    if (!date || !startTime || !endTime || !slotDuration || !maxTokens) {
+    if (!date || !startTime || !endTime || !slotDuration || !breakStart || !breakEnd) {
       return res.status(400).json({ message: "All schedule fields are required" });
     }
 
@@ -51,8 +50,7 @@ exports.createSchedule = async (req, res) => {
       endTime,
       breakStart,
       breakEnd,
-      slotDuration,
-      maxTokens
+      slotDuration
     );
 
     if (!slots || slots.length === 0) {
@@ -67,7 +65,6 @@ exports.createSchedule = async (req, res) => {
       breakStart,
       breakEnd,
       slotDuration,
-      maxTokens,
       slots
     });
 
