@@ -97,20 +97,35 @@ exports.bookToken = async (req, res) => {
       return res.status(500).json({ message: "Failed to create token" });
     }
 
-    try {
-      const patientUser = await User.findById(req.user.id).populate(
-        "department",
-      );
+ try {
+   // Get full schedule with doctor and department
+   const fullSchedule = await Schedule.findById(schedule._id).populate({
+     path: "doctor",
+     populate: [
+       {
+         path: "user",
+         model: "User",
+         select: "name",
+       },
+       {
+         path: "department",
+         model: "Department",
+         select: "name",
+       },
+     ],
+   });
 
-      await sendTokenBookedEmail(patientUser.email, patientUser.name, {
-        tokenNumber: token.tokenNumber,
-        slotTime: token.slotTime,
-        department: token.department?.name || "N/A",
-        doctor: token.doctor?.user?.name || "Doctor",
-      });
-    } catch (err) {
-      console.log("Booking email failed:", err.message);
-    }
+   const patientUser = await User.findById(req.user.id);
+
+   await sendTokenBookedEmail(patientUser.email, patientUser.name, {
+     tokenNumber: token.tokenNumber,
+     slotTime: token.slotTime,
+     department: fullSchedule.doctor?.department?.name || "N/A",
+     doctor: fullSchedule.doctor?.user?.name || "Doctor",
+   });
+ } catch (err) {
+   console.log("Booking email failed:", err.message);
+ }
 
     res.status(201).json({
       message: "Token booked successfully",

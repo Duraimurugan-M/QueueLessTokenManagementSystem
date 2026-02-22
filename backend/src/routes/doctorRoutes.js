@@ -16,6 +16,6 @@ router.post("/schedule", createSchedule);
 router.get("/schedule", getMySchedule);
 
 router.get("/queue", getTodayQueue);
-router.patch("/token/:tokenId", updateTokenStatus);
+router.patch("/complete-token/:tokenId", updateTokenStatus);
 
 module.exports = router;

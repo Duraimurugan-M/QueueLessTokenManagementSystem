@@ -163,7 +163,7 @@ exports.sendPasswordResetConfirmation = async (toEmail, name) => {
 
 exports.sendTokenBookedEmail = async (to, patientName, tokenDetails) => {
   await transporter.sendMail({
-    from: `"QueueLess Hospital" <${process.env.EMAIL_USER}>`,
+    from: `"QueueLess Hospital" <${process.env.EMAIL_FROM}>`,
     to,
     subject: `🎫 Token Confirmed: #${tokenDetails.tokenNumber} - QueueLess`,
     html: `
@@ -207,7 +207,7 @@ exports.sendTokenBookedEmail = async (to, patientName, tokenDetails) => {
 
 exports.sendTokenCancelledEmail = async (to, patientName, tokenNumber) => {
   await transporter.sendMail({
-    from: `"QueueLess Hospital" <${process.env.EMAIL_USER}>`,
+    from: `"QueueLess Hospital" <${process.env.EMAIL_FROM}>`,
     to,
     subject: "🚫 Appointment Cancelled - QueueLess",
     html: `
@@ -234,7 +234,7 @@ exports.sendPrescriptionEmail = async (to, patientName, prescriptionId) => {
   const downloadLink = `${process.env.FRONTEND_URL}/api/prescriptions/${prescriptionId}/pdf`;
 
   await transporter.sendMail({
-    from: `"QueueLess Digital Records" <${process.env.EMAIL_USER}>`,
+    from: `"QueueLess Digital Records" <${process.env.EMAIL_FROM}>`,
     to,
     subject: "💊 Your Digital Prescription is Ready - QueueLess",
     html: `

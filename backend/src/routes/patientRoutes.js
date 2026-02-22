@@ -15,7 +15,7 @@ router.use(auth, role(["PATIENT"]));
 
 router.get("/slots", getAvailableSlots);
 router.post("/book-token", bookToken);
-router.delete("/cancel/:tokenId", cancelToken);
+router.patch("/cancel-token/:tokenId", cancelToken);
 router.get("/visit-history", getPatientVisitHistory);
 
 module.exports = router;

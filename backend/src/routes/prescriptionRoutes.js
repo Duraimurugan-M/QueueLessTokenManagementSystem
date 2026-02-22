@@ -21,6 +21,7 @@ router.post(
 router.get(
   "/:id/pdf",
   authMiddleware,
+  roleMiddleware([ROLES.DOCTOR, ROLES.PATIENT]),
   downloadPrescriptionPDF
 );
 

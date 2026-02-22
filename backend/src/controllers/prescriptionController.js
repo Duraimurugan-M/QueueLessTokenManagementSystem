@@ -8,9 +8,9 @@ const User = require("../models/User");
 exports.createPrescription = async (req, res) => {
   try {
     const { tokenId, diagnosisNotes, medicines } = req.body;
-    const doctorId = req.user?.id;
+    const doctorUserId = req.user?.id;
 
-    if (!doctorId) {
+    if (!doctorUserId) {
       return res.status(401).json({ message: "Unauthorized: doctor ID missing" });
     }
 
@@ -18,23 +18,41 @@ exports.createPrescription = async (req, res) => {
       return res.status(400).json({ message: "Token ID is required" });
     }
 
-    // Validate medicines array
+    if (!diagnosisNotes) {
+      return res.status(400).json({ message: "Diagnosis notes are required" });
+    }
+
     if (!medicines || !Array.isArray(medicines) || medicines.length === 0) {
       return res.status(400).json({ message: "At least one medicine is required" });
     }
 
-    // Validate each medicine has required fields including sideEffects
     for (let med of medicines) {
-      if (!med.name || !med.timing || !med.foodInstruction || !med.sideEffects) {
+      if (
+        !med.name ||
+        !Array.isArray(med.timing) ||
+        med.timing.length === 0 ||
+        !med.foodInstruction ||
+        !med.sideEffects
+      ) {
         return res.status(400).json({
-          message: "Each medicine must have name, timing, foodInstruction, and sideEffects"
+          message:
+            "Each medicine must have name, timing, foodInstruction, and sideEffects",
         });
       }
     }
 
-    const token = await Token.findById(tokenId);
+    const doctor = await Doctor.findOne({ user: doctorUserId });
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor profile not found" });
+    }
+
+    const token = await Token.findOne({
+      _id: tokenId,
+      doctor: doctor._id
+    });
+
     if (!token) {
-      return res.status(404).json({ message: "Token not found" });
+      return res.status(404).json({ message: "Token not found or unauthorized" });
     }
 
     if (token.status !== "COMPLETED") {
@@ -50,11 +68,6 @@ exports.createPrescription = async (req, res) => {
       });
     }
 
-    const doctor = await Doctor.findOne({ user: doctorId });
-    if (!doctor) {
-      return res.status(404).json({ message: "Doctor profile not found" });
-    }
-
     const prescription = await Prescription.create({
       patient: token.patient,
       doctor: doctor._id,
@@ -64,18 +77,15 @@ exports.createPrescription = async (req, res) => {
       medicines
     });
 
-    if (!prescription) {
-      return res.status(500).json({ message: "Failed to create prescription" });
-    }
-
     try {
       const patientUser = await User.findById(token.patient);
-
-      await sendPrescriptionEmail(
-        patientUser.email,
-        patientUser.name,
-        prescription._id,
-      );
+      if (patientUser?.email) {
+        await sendPrescriptionEmail(
+          patientUser.email,
+          patientUser.name,
+          prescription._id
+        );
+      }
     } catch (err) {
       console.log("Prescription email failed:", err.message);
     }
@@ -93,6 +103,7 @@ exports.createPrescription = async (req, res) => {
   }
 };
 
+
 exports.downloadPrescriptionPDF = async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,11 +118,11 @@ exports.downloadPrescriptionPDF = async (req, res) => {
         path: "doctor",
         populate: {
           path: "user",
-          model: "User",
-          select: "name",
-        },
+          select: "name"
+        }
       })
-      .populate("department", "name");
+      .populate("department", "name")
+      .populate("token", "tokenNumber slotTime");
 
     if (!prescription) {
       return res.status(404).json({ message: "Prescription not found" });

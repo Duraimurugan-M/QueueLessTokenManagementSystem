@@ -7,7 +7,7 @@ const medicineSchema = new mongoose.Schema({
     trim: true
   },
   timing: {
-    type: String,
+    type: [String],
     enum: ["Morning", "Afternoon", "Night"],
     required: true
   },

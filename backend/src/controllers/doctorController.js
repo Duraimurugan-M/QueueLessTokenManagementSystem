@@ -148,7 +148,7 @@ exports.getTodayQueue = async (req, res) => {
   }
 };
 
-// 4️⃣ UPDATE TOKEN STATUS (CALL / COMPLETE)
+// 4️⃣ MARK TOKEN AS COMPLETED
 exports.updateTokenStatus = async (req, res) => {
   try {
     const doctorUserId = req.user?.id;
@@ -157,24 +157,17 @@ exports.updateTokenStatus = async (req, res) => {
     }
 
     const { tokenId } = req.params;
-    const { status } = req.body;
-
     if (!tokenId) {
       return res.status(400).json({ message: "Token ID is required" });
     }
 
-    if (!["BOOKED", "COMPLETED"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status. Must be BOOKED or COMPLETED" });
-    }
-
-    const doctor = await Doctor.findOne({
-      user: doctorUserId
-    });
-
+    // Find doctor profile
+    const doctor = await Doctor.findOne({ user: doctorUserId });
     if (!doctor) {
       return res.status(404).json({ message: "Doctor profile not found" });
     }
 
+    // Find token belonging to this doctor
     const token = await Token.findOne({
       _id: tokenId,
       doctor: doctor._id
@@ -184,32 +177,36 @@ exports.updateTokenStatus = async (req, res) => {
       return res.status(404).json({ message: "Token not found or unauthorized" });
     }
 
-    token.status = status;
-    const updatedToken = await token.save();
-
-    if (!updatedToken) {
-      return res.status(500).json({ message: "Failed to update token" });
+    // Prevent re-completing
+    if (token.status === "COMPLETED") {
+      return res.status(400).json({ message: "Token already completed" });
     }
 
-    // If completed, mark slot as completed too
-    if (status === "COMPLETED") {
-      const schedule = await Schedule.findById(token.schedule);
-      if (schedule) {
-        const slot = schedule.slots.id(token.slotId);
-        if (slot) {
-          slot.status = "COMPLETED";
-          await schedule.save();
-        }
+    // Update token status
+    token.status = "COMPLETED";
+    await token.save();
+
+    // Update slot status inside schedule
+    const schedule = await Schedule.findById(token.schedule);
+    if (schedule) {
+      const slot = schedule.slots.id(token.slotId);
+      if (slot) {
+        slot.status = "COMPLETED";
+        await schedule.save();
       }
     }
 
-    res.json({ message: "Token updated successfully", token: updatedToken });
+    res.json({
+      message: "Token marked as completed successfully",
+      token
+    });
 
   } catch (error) {
     console.error("Update token status error:", error);
     res.status(500).json({ message: "Server error updating token" });
   }
 };
+
 
 // GET TODAY'S DOCTOR ANALYTICS
 exports.getTodayDoctorAnalytics = async (req, res) => {
