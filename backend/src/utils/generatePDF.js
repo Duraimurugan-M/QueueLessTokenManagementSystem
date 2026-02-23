@@ -1,61 +1,97 @@
 const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
 
-module.exports = function generateTokenPDF(res, token, doctor, department) {
-  const doc = new PDFDocument({ size: "A4", margin: 50 });
+module.exports = async function generateTokenPDF(res, token, doctor, department) {
+  const doc = new PDFDocument({ size: "A4", margin: 0 });
+
+  // --- SANITIZE FILENAME ---
+  // 1. Replace spaces with underscores
+  const safePatientName = token.patientDetails.name.replace(/\s+/g, "_");
+  const fileName = `Token-${token.tokenNumber}_${safePatientName}.pdf`;
 
   res.setHeader("Content-Type", "application/pdf");
+  // 2. Wrap the filename in double quotes to handle any other special characters
   res.setHeader(
     "Content-Disposition",
-    `attachment; filename=token-${token.tokenNumber}.pdf`
+    `attachment; filename="${fileName}"`
   );
 
   doc.pipe(res);
 
-  // Title
-  doc
-    .fontSize(20)
-    .text("QueueLess Hospital", { align: "center" })
-    .moveDown(1);
+  // --- STYLES ---
+  const primaryColor = "#0f766e"; 
+  const secondaryColor = "#1e293b";
+  const lightGray = "#f8fafc";
+  const appointmentDate = token.createdAt ? new Date(token.createdAt).toISOString().split("T")[0] : "N/A";
 
-  doc
-    .fontSize(14)
-    .text("Appointment Token", { align: "center" })
-    .moveDown(2);
+  // 1. HEADER BAR
+  doc.rect(0, 0, 595.28, 140).fill(primaryColor);
 
-  doc.fontSize(12);
+  // 2. LOGO LOADING (Local File Method)
+  try {
+    const logoPath = path.join(__dirname, "../../public/QueueLess-Logo-email.png");
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 50, 35, { width: 70 });
+    }
+  } catch (error) {
+    console.error("Logo loading failed:", error.message);
+  }
 
-  // Token Details
-  doc.text(`Patient Name: ${token.patientDetails.name}`);
-  doc.text(`Age: ${token.patientDetails.age}`);
-  doc.text(`Date of Birth: ${token.patientDetails.dob}`);
-  doc.moveDown();
+  // 3. BRANDING & TITLE
+  doc.fillColor("#ffffff")
+     .fontSize(24)
+     .font("Helvetica-Bold")
+     .text("QueueLess Hospital", 140, 50);
+  
+  doc.fontSize(12)
+     .font("Helvetica")
+     .text("Official Appointment Token", 140, 80)
+     .text("Scan-ready Digital Pass", 140, 95);
 
-  doc.text(`Department: ${department.name}`);
-  doc.text(`Doctor: ${doctor.user.name}`);
-  doc.moveDown();
+  // 4. MAIN TOKEN CARD
+  const cardX = 50;
+  const cardY = 170;
+  doc.rect(cardX, cardY, 495, 300).fill("#ffffff").strokeColor("#e2e8f0").lineWidth(1).stroke();
 
-  doc.text(`Token Number: ${token.tokenNumber}`);
-  doc.text(`Appointment Time: ${token.slotTime}`);
-  doc.text(`Appointment Date: ${token.createdAt.toISOString().split("T")[0]}`);
+  // 5. THE TOKEN BADGE
+  doc.rect(cardX + 150, cardY + 30, 195, 100).fill(lightGray);
+  doc.rect(cardX + 150, cardY + 30, 195, 100).strokeColor(primaryColor).lineWidth(2).dash(5, { space: 5 }).stroke();
+  
+  doc.fillColor(primaryColor).fontSize(10).font("Helvetica-Bold").text("TOKEN NUMBER", cardX + 150, cardY + 50, { align: "center", width: 195 });
+  doc.fillColor(secondaryColor).fontSize(40).text(`#${token.tokenNumber}`, cardX + 150, cardY + 65, { align: "center", width: 195 });
+  doc.undash();
 
-  doc.moveDown(2);
+  // 6. APPOINTMENT DETAILS
+  let detailY = cardY + 160;
+  doc.fillColor(secondaryColor).fontSize(10).font("Helvetica-Bold").text("PATIENT DETAILS", cardX + 30, detailY);
+  doc.font("Helvetica").fontSize(11)
+     .text(`Name: ${token.patientDetails.name}`, cardX + 30, detailY + 20)
+     .text(`Age/DOB: ${token.patientDetails.age} | ${token.patientDetails.dob}`, cardX + 30, detailY + 40);
 
-  // Instructions
-  doc
-    .fontSize(11)
-    .text("Instructions:", { underline: true })
-    .moveDown(0.5);
+  doc.font("Helvetica-Bold").text("VISIT DETAILS", 320, detailY);
+  doc.font("Helvetica").fontSize(11)
+     .text(`Doctor: Dr. ${doctor.user.name}`, 320, detailY + 20)
+     .text(`Dept: ${department.name}`, 320, detailY + 40);
 
-  doc
-    .fontSize(10)
-    .text(
-      "- Please arrive at the hospital at least 10 minutes before your scheduled time.\n" +
-      "- Carry this token (printed or digital) during your visit.\n" +
-      "- Appointment time may vary slightly based on consultation flow."
-    );
+  doc.rect(cardX + 20, cardY + 230, 455, 40).fill(primaryColor);
+  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(12)
+     .text(`DATE: ${appointmentDate}`, cardX + 40, cardY + 245)
+     .text(`TIME SLOT: ${token.slotTime}`, 320, cardY + 245);
 
-  doc.moveDown(2);
-  doc.text("Thank you for choosing QueueLess.", { align: "center" });
+  // 7. INSTRUCTIONS
+  let instructionY = 500;
+  doc.fillColor(primaryColor).fontSize(12).font("Helvetica-Bold").text("Instructions for your visit:", cardX, instructionY);
+  doc.moveTo(cardX, instructionY + 15).lineTo(545, instructionY + 15).strokeColor(primaryColor).lineWidth(0.5).stroke();
+
+  doc.fillColor(secondaryColor).fontSize(10).font("Helvetica")
+     .text("• Please arrive 10 minutes before your slot.", cardX, instructionY + 30)
+     .text("• Present this digital pass at the reception.", cardX, instructionY + 45);
+
+  // 8. FOOTER
+  const footerY = 780;
+  doc.rect(0, footerY, 595.28, 62).fill(lightGray);
+  doc.fillColor("#94a3b8").fontSize(9).text("This token is system-generated by QueueLess Hospital.", 0, footerY + 25, { align: "center", width: 595.28 });
 
   doc.end();
 };
